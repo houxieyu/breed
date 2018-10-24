@@ -1,10 +1,11 @@
 var nodedatas = [];
 var linedatas = [];
+var initCnt = 8;
+var childCnt = 3;
+var loopCnt = 20;
+var marryCheckDeep = 1;
 function initDatas() {
 
-    var initCnt = 16;
-    var childCnt = 3;
-    var loopCnt = 20;
     //初始化第一代
     for (var i = 0, firstData = []; i < initCnt; i++) {
         firstData.push({
@@ -140,7 +141,7 @@ function canMarry(fatherNode, motherNode, layer) {
         preMothers.add(n3 = nodedatas[layer - 1][motherNode.pidx[0]]);
         preMothers.add(n4 = nodedatas[layer - 1][motherNode.pidx[1]]);
     }
-    if (layer > 1) {
+    if (marryCheckDeep>1 && layer > 1) {
         // if(n1){
         preFathers.add(nodedatas[layer - 2][n1.pidx[0]]);
         preFathers.add(nodedatas[layer - 2][n1.pidx[1]]);
