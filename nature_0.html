@@ -5,8 +5,7 @@
         fill: steelblue;
     }
 
-    .chart text {
-        fill: white;
+    .chart {
         font: 10px sans-serif;
         text-anchor: end;
     }
@@ -14,7 +13,7 @@
         height:100%;
     }
     line{
-        stroke:rgb(99,99,99);stroke-width:2
+        /* stroke:rgb(99,99,99);stroke-width:1 */
     }
 </style>
 <html>
@@ -28,11 +27,12 @@
 <script>
     var allData = initDatas();
     var breeddata = allData.nodeDatas;
+    var inners = breeddata[breeddata.length-1].length-1;
     var linedata = allData.lineDatas;
     var width = 420,
-        ptwidth = 30,
-        padframe = 50,
-        padinner = 50,
+        ptwidth = 50,
+        padframe = 80,
+        padinner = 30,
         padvertical = 100;
 
     var x = d3.scale.linear()
@@ -46,40 +46,77 @@
         // x.domain([0, d3.max(data, function (d) { return d.value; })]);
 
         // chart.attr("height", ptwidth * breeddata.length);
-
+        //绘制关系
+        chart.selectAll("line")
+            .data(linedata)
+            .enter().append("line")
+            .attr("x1",function(d){
+                var curinners = breeddata[d.sNode.layno].length-1;
+                return padframe+(d.sNode.sortid-1)*inners/curinners*(ptwidth+padinner);
+            })
+            .attr("y1",function(d){
+                return padframe+d.sNode.layno*(ptwidth+padvertical);
+            })
+            .attr("x2",function(d){
+                var curinners = breeddata[d.eNode.layno].length-1;
+                return padframe+(d.eNode.sortid-1)*inners/curinners*(ptwidth+padinner);
+            })
+            .attr("y2",function(d){
+                return padframe+d.eNode.layno*(ptwidth+padvertical);
+            })
+            .attr("stroke","rgb(99,99,99)");;
         var bar = chart.selectAll("g")
             .data(breeddata)
             .enter().append("g")
             .attr("transform", function (d, i) { return "translate(0," + (padframe+i * (ptwidth+padvertical)) + ")"; });
 
         bar.each(function(ele,i) {
-            d3.select(this).selectAll("circle")
+            var curinners = breeddata[i].length-1;
+            var gs = d3.select(this).selectAll("g")
                 .data(breeddata[i])
-                .enter().append("circle")
-                .attr("r", ptwidth/2 )
+                .enter().append("g")
                 .attr("transform", function (d, j) {
-                     return "translate(" + (padframe+j * (ptwidth+padinner)) + ",0)"; 
+                     return "translate(" + (padframe+(d.sortid-1) *inners/curinners* (ptwidth+padinner)) + ",0)"; 
                 });
+            gs.append("circle")   
+                .attr("r", ptwidth/2 )
+                .on("mouseover",function(d){
+                    var supers = getSupers(d);
+                    chart.selectAll("circle")
+                        .filter(function(e){
+                            return supers.has(e);
+                        })  
+                        // .style("stroke:rgb(0,0,255)");
+                        .attr("fill","red");
+                    chart.selectAll("line")
+                    .filter(function(e){
+                            return supers.has(e.eNode);
+                        })  
+                        // .style("stroke:rgb(0,0,255)");
+                        .attr("stroke","red")
+                        .attr("stroke-width","2");
+                })
+                .on("mouseout",function(){
+                    chart.selectAll("circle")
+                    .attr("fill",d=>(d.sortid%2==0?'yellow':'green'));
+                    chart.selectAll("line")
+                        .attr("stroke-width","1")
+                        .attr("stroke","rgb(99,99,99)");
+                })
+                .attr("fill",d=>(d.sortid%2==0?'yellow':'green'));
+            gs.append("text").text(function(d){
+                return 'id:'+d.id;//+',pid:'+d.pid[0]+','+d.pid[1];
+            })
+            .attr("transform", function (d) {
+                     return "translate(0," + ptwidth + ")"; 
+            })
+            .attr("fill","black");
+
         });
-        
-        //绘制关系
-        chart.selectAll("line")
-            .data(linedata)
-            .enter().append("line")
-            .attr("x1",function(d){
-                console.log(d)
-                return padframe+(d.sNode.id-1)*(ptwidth+padinner);
-            })
-            .attr("y1",function(d){
-                return padframe+d.sNode.layno*(ptwidth+padvertical);
-            })
-            .attr("x2",function(d){
-                return padframe+(d.eNode.id-1)*(ptwidth+padinner);
-            })
-            .attr("y2",function(d){
-                return padframe+d.eNode.layno*(ptwidth+padvertical);
-            });
+         
+
         chart.attr("height", (ptwidth+padvertical) * breeddata.length);
+        chart.attr("width", (ptwidth+padinner) * (breeddata[breeddata.length-1].length+1));
     // });
 
     function type(d) {
